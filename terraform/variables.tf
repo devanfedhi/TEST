@@ -10,6 +10,10 @@ variable "droplet_name" {
   type        = string
 }
 
+variable "project_name" {
+  type        = string
+}
+
 // This base image will only be used for the initial creation of the droplet (or if a snapshot was not found).
 // After that, the image will be updated to the latest snapshot.
 // The snapshot will be created by the shutdown workflow.
