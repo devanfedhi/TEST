@@ -42,12 +42,20 @@ jobs:
         run: |
           SNAPSHOT_NAME=${{ env.snapshot_name }}
 
+          # Get existing snapshot IDs with this name
+          EXISTING_IDS=$(doctl compute snapshot list --resource droplet --format ID,Name --no-header | grep "$SNAPSHOT_NAME" | awk '{print $1}')
+
           # Create a new snapshot
           doctl compute droplet-action snapshot $DROPLET_ID --snapshot-name $SNAPSHOT_NAME
 
-          # Wait for the snapshot to be available
-          until doctl compute snapshot list --resource droplet | grep "$SNAPSHOT_NAME"; do
-            echo "Waiting for snapshot..."; sleep 10;
+          # Wait for a new snapshot to appear
+          while true; do
+            NEW_ID=$(doctl compute snapshot list --resource droplet --format ID,Name --no-header | grep "$SNAPSHOT_NAME" | awk '{print $1}' | grep -vxFf <(echo "$EXISTING_IDS") | head -n1)
+            if [ -n "$NEW_ID" ]; then
+              SNAPSHOT_ID="$NEW_ID"
+              break
+            fi
+            echo "Waiting for new snapshot..."; sleep 10;
           done
 
           echo "Snapshot has been created with ID $SNAPSHOT_ID"
