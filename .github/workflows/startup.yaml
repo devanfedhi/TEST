@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Update Terraform image variable to latest snapshot
-        # if: steps.check_droplet.outputs.already_running != 'true'
+        if: steps.check_droplet.outputs.already_running != 'true'
         working-directory: ${{ env.working_directory }}
         run: |
           set -e
@@ -64,21 +64,21 @@ jobs:
           fi
 
       - name: Setup Terraform
-        # if: steps.check_droplet.outputs.already_running != 'true'
+        if: steps.check_droplet.outputs.already_running != 'true'
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        # if: steps.check_droplet.outputs.already_running != 'true'
+        if: steps.check_droplet.outputs.already_running != 'true'
         working-directory: ${{ env.working_directory }}
         run: terraform init
 
       - name: Terraform Plan
-        # if: steps.check_droplet.outputs.already_running != 'true'
+        if: steps.check_droplet.outputs.already_running != 'true'
         working-directory: ${{ env.working_directory }}
         run: terraform plan -out=startup.tfplan
 
       - name: Terraform Apply
-        # if: steps.check_droplet.outputs.already_running != 'true' && github.ref == 'refs/heads/main'
+        if: steps.check_droplet.outputs.already_running != 'true' && github.ref == 'refs/heads/main'
         working-directory: ${{ env.working_directory }}
         run: |
           set -e
