@@ -40,7 +40,7 @@ jobs:
           fi
 
       - name: Update Terraform image variable to latest snapshot
-        if: steps.check_droplet.outputs.already_running != 'true'
+        # if: steps.check_droplet.outputs.already_running != 'true'
         working-directory: ${{ env.working_directory }}
         run: |
           # Get the latest snapshot ID with the name "bbs-snapshot-latest"
@@ -58,16 +58,16 @@ jobs:
           fi
 
       - name: Setup Terraform
-        if: steps.check_droplet.outputs.already_running != 'true'
+        # if: steps.check_droplet.outputs.already_running != 'true'
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        if: steps.check_droplet.outputs.already_running != 'true'
+        # if: steps.check_droplet.outputs.already_running != 'true'
         working-directory: ${{ env.working_directory }}
         run: terraform init
 
       - name: Terraform Plan
-        if: steps.check_droplet.outputs.already_running != 'true'
+        # if: steps.check_droplet.outputs.already_running != 'true'
         run: terraform plan -out=startup.tfplan
         working-directory: ${{ env.working_directory }}
 
