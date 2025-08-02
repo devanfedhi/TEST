@@ -3,6 +3,6 @@ resource "digitalocean_project_resources" "project_bbs_resources" {
   resources = [
     digitalocean_droplet.droplet_bbs_game_server.urn,
     digitalocean_reserved_ip.droplet_bbs_game_server_ip.urn,
-    digitalocean_reserved_ip_assignment.droplet_bbs_game_server_ip_assignment.urn,
+    digitalocean_reserved_ip_assignment.droplet_bbs_game_server_ip_assignment.id,
   ]
 }
