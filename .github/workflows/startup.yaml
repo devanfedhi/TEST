@@ -49,4 +49,4 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
         working-directory: ${{ env.working_directory }}
-        run: terraform apply -auto-approve startup.tfplan
+        run: terraform apply -auto-approve startup.tfplan 2>&1 | sed -E 's/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/***.***.***.***/g'

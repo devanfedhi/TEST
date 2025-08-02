@@ -103,9 +103,9 @@ jobs:
             echo "Masked reserved IP address"
           fi
 
-          terraform plan -destroy -target=digitalocean_droplet.droplet_bbs_game_server -out=destroy.tfplan
+          terraform plan -destroy -target=digitalocean_droplet.droplet_bbs_game_server -out=destroy.tfplan 2>&1 | sed -E 's/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/***.***.***.***/g'
 
       # - name: Terraform Destroy
       #   if: github.ref == 'refs/heads/main'
       #   working-directory: ${{ env.working_directory }}
-      #   run: terraform apply -auto-approve destroy.tfplan
+      #   run: terraform apply -auto-approve destroy.tfplan 2>&1 | sed -E 's/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/***.***.***.***/g'
