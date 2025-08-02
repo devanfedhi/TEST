@@ -6,6 +6,7 @@ on:
 env:
   working_directory: ./terraform
   snapshot_name: bbs-snapshot-latest
+  max_num_snapshots: 2
 
 jobs:
   shutdown:
@@ -21,40 +22,50 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=${{ secrets.DIGITAL_OCEAN_SPACES_ACCESS_KEY_ID }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DIGITAL_OCEAN_SPACES_SECRET_KEY }}" >> $GITHUB_ENV
 
-      # - name: Install doctl
-      #   run: |
-      #     sudo snap install doctl
-      #     doctl auth init -t $DIGITALOCEAN_ACCESS_TOKEN
+      - name: Install doctl
+        run: |
+          sudo snap install doctl
+          doctl auth init -t $DIGITALOCEAN_ACCESS_TOKEN
 
-      # - name: Get Droplet ID
-      #   id: get_droplet
-      #   run: |
-      #     DROPLET_ID=$(doctl compute droplet list --format ID,Name --no-header | grep "${{ vars.droplet_name }}" | awk '{print $1}')
-      #     if [ -z "$DROPLET_ID" ]; then
-      #       echo "Droplet '${{ vars.droplet_name }}' not found. Exiting workflow."
-      #       exit 0
-      #     fi
-      #     echo "DROPLET_ID=$DROPLET_ID" >> $GITHUB_ENV
+      - name: Get Droplet ID
+        id: get_droplet
+        run: |
+          DROPLET_ID=$(doctl compute droplet list --format ID,Name --no-header | grep "${{ vars.droplet_name }}" | awk '{print $1}')
+          if [ -z "$DROPLET_ID" ]; then
+            echo "Droplet '${{ vars.droplet_name }}' not found. Exiting workflow."
+            exit 0
+          fi
+          echo "DROPLET_ID=$DROPLET_ID" >> $GITHUB_ENV
 
-      # - name: Take Snapshot
-      #   if: github.ref == 'refs/heads/main'
-      #   run: |
-      #     SNAPSHOT_NAME=${{ env.snapshot_name }}
+      - name: Take Snapshot
+        if: github.ref == 'refs/heads/main'
+        run: |
+          SNAPSHOT_NAME=${{ env.snapshot_name }}
 
-      #     # Delete any existing snapshot with the same name
-      #     EXISTING_SNAPSHOT_ID=$(doctl compute snapshot list --resource droplet --format ID,Name --no-header | grep "$SNAPSHOT_NAME" | awk '{print $1}')
-      #     if [ -n "$EXISTING_SNAPSHOT_ID" ]; then
-      #       doctl compute snapshot delete "$EXISTING_SNAPSHOT_ID" --force
-      #     fi
+          # Create a new snapshot
+          doctl compute droplet-action snapshot $DROPLET_ID --snapshot-name $SNAPSHOT_NAME
 
-      #     # Create a new snapshot and wait for it to replicate
-      #     doctl compute droplet-action snapshot $DROPLET_ID --snapshot-name $SNAPSHOT_NAME
-      #     until doctl compute snapshot list --resource droplet | grep "$SNAPSHOT_NAME"; do
-      #       echo "Waiting for snapshot..."; sleep 10;
-      #     done
+          # Wait for the snapshot to be available
+          until doctl compute snapshot list --resource droplet | grep "$SNAPSHOT_NAME"; do
+            echo "Waiting for snapshot..."; sleep 10;
+          done
 
-      #     SNAPSHOT_ID=$(doctl compute snapshot list --resource droplet --format ID,Name --no-header | grep "$SNAPSHOT_NAME" | awk '{print $1}')
-      #     echo "Snapshot has been created with ID $SNAPSHOT_ID"
+          echo "Snapshot has been created with ID $SNAPSHOT_ID"
+
+          # Keep only the 2 most recent snapshots matching the name pattern
+          SNAPSHOTS=$(doctl compute snapshot list --resource droplet --format ID,Name,Created --no-header | grep "$SNAPSHOT_NAME" | sort -rk3)
+          SNAPSHOT_IDS=($(echo "$SNAPSHOTS" | awk '{print $1}'))
+
+          # If more than 2 snapshots, delete the older ones
+          if [ ${#SNAPSHOT_IDS[@]} -gt ${{ env.max_num_snapshots }} ]; then
+            for ((i=2; i<${#SNAPSHOT_IDS[@]}; i++)); do
+              echo "Deleting old snapshot: ${SNAPSHOT_IDS[$i]}"
+              doctl compute snapshot delete "${SNAPSHOT_IDS[$i]}" --force
+            done
+          fi
+
+          echo "Snapshot rotation complete. Current snapshots:"
+          doctl compute snapshot list --resource droplet --format ID,Name,Created
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
