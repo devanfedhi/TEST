@@ -1,0 +1,51 @@
+name: Startup Droplet (Recreate from Snapshot)
+
+on:
+  workflow_dispatch:
+
+env:
+  working_directory: ./terraform
+  snapshot_name: bbs-snapshot-latest
+
+jobs:
+  startup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup environment variables
+        run: |
+          echo "TF_VAR_do_token=${{ secrets.DIGITAL_OCEAN_PAT }}" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.DIGITAL_OCEAN_SPACES_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DIGITAL_OCEAN_SPACES_SECRET_KEY }}" >> $GITHUB_ENV
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ env.working_directory }}
+        run: terraform init
+
+      - name: Update Terraform image variable to latest snapshot
+        working-directory: ${{ env.working_directory }}
+        run: |
+          # Get the latest snapshot ID with the name "bbs-snapshot-latest"
+          SNAPSHOT_ID=$(doctl compute snapshot list --resource droplet --format ID,Name,Created --no-header \
+            | grep "${{ vars.snapshot_name }}" \
+            | sort -rk3 \
+            | head -n1 \
+            | awk '{print $1}')
+          if [ -n "$SNAPSHOT_ID" ]; then
+            echo "TF_VAR_droplet_image=$SNAPSHOT_ID" >> $GITHUB_ENV
+          else
+            echo "No snapshot found with name '${{ vars.snapshot_name }}'. Not setting TF_VAR_droplet_image."
+          fi
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: ${{ env.working_directory }}
+
+      # - name: Terraform Apply
+      #   working-directory: ${{ env.working_directory }}
+      #   run: terraform apply -auto-approve
