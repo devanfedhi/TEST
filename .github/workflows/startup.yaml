@@ -20,13 +20,6 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=${{ secrets.DIGITAL_OCEAN_SPACES_ACCESS_KEY_ID }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DIGITAL_OCEAN_SPACES_SECRET_KEY }}" >> $GITHUB_ENV
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init
-        working-directory: ${{ env.working_directory }}
-        run: terraform init
-
       - name: Update Terraform image variable to latest snapshot
         working-directory: ${{ env.working_directory }}
         run: |
@@ -42,10 +35,18 @@ jobs:
             echo "No snapshot found with name '${{ vars.snapshot_name }}'. Not setting TF_VAR_droplet_image."
           fi
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ env.working_directory }}
+        run: terraform init
+
       - name: Terraform Plan
         run: terraform plan -out=tfplan
         working-directory: ${{ env.working_directory }}
 
-      # - name: Terraform Apply
-      #   working-directory: ${{ env.working_directory }}
-      #   run: terraform apply -auto-approve
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        working-directory: ${{ env.working_directory }}
+        run: terraform apply -auto-approve
