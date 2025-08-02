@@ -53,7 +53,7 @@ jobs:
           echo "Snapshot has been created with ID $SNAPSHOT_ID"
 
           # Keep only the 2 most recent snapshots matching the name pattern
-          SNAPSHOTS=$(doctl compute snapshot list --resource droplet --format ID,Name,Created --no-header | grep "$SNAPSHOT_NAME" | sort -rk3)
+          SNAPSHOTS=$(doctl compute snapshot list --resource droplet --format ID,Name,CreatedAt --no-header | grep "$SNAPSHOT_NAME" | sort -rk3)
           SNAPSHOT_IDS=($(echo "$SNAPSHOTS" | awk '{print $1}'))
 
           # If more than 2 snapshots, delete the older ones
@@ -65,7 +65,7 @@ jobs:
           fi
 
           echo "Snapshot rotation complete. Current snapshots:"
-          doctl compute snapshot list --resource droplet --format ID,Name,Created
+          doctl compute snapshot list --resource droplet --format ID,Name,CreatedAt
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
