@@ -38,14 +38,14 @@ jobs:
         run: |
           # Get the latest snapshot ID with the name "bbs-snapshot-latest"
           SNAPSHOT_ID=$(doctl compute snapshot list --resource droplet --format ID,Name,Created --no-header \
-            | grep "${{ vars.snapshot_name }}" \
+            | grep "${{ env.snapshot_name }}" \
             | sort -rk3 \
             | head -n1 \
             | awk '{print $1}')
           if [ -n "$SNAPSHOT_ID" ]; then
             echo "TF_VAR_droplet_image=$SNAPSHOT_ID" >> $GITHUB_ENV
           else
-            echo "No snapshot found with name '${{ vars.snapshot_name }}'. Not setting TF_VAR_droplet_image."
+            echo "No snapshot found with name '${{ env.snapshot_name }}'. Not setting TF_VAR_droplet_image."
           fi
 
       - name: Setup Terraform
