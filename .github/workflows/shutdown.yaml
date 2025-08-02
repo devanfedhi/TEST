@@ -14,12 +14,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # - name: Setup environment variables
-      #   run: |
-      #     echo "DIGITALOCEAN_ACCESS_TOKEN=${{ secrets.DIGITAL_OCEAN_PAT }}" >> $GITHUB_ENV
-      #     echo "TF_VAR_do_token=${{ secrets.DIGITAL_OCEAN_PAT }}" >> $GITHUB_ENV
-      #     echo "AWS_ACCESS_KEY_ID=${{ secrets.DIGITAL_OCEAN_SPACES_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-      #     echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DIGITAL_OCEAN_SPACES_SECRET_KEY }}" >> $GITHUB_ENV
+      - name: Setup environment variables
+        run: |
+          echo "DIGITALOCEAN_ACCESS_TOKEN=${{ secrets.DIGITAL_OCEAN_PAT }}" >> $GITHUB_ENV
+          echo "TF_VAR_do_token=${{ secrets.DIGITAL_OCEAN_PAT }}" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.DIGITAL_OCEAN_SPACES_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DIGITAL_OCEAN_SPACES_SECRET_KEY }}" >> $GITHUB_ENV
 
       # - name: Install doctl
       #   run: |
@@ -63,7 +63,11 @@ jobs:
         working-directory: ${{ env.working_directory }}
         run: terraform init
 
-      - name: Destroy only the droplet with Terraform
-        if: github.ref == 'refs/heads/main'
+      - name: Terraform Destroy Plan
         working-directory: ${{ env.working_directory }}
-        run: terraform destroy -auto-approve -target=digitalocean_droplet.droplet_bbs_game_server
+        run: terraform plan -destroy -out=tfplan
+
+      # - name: Destroy only the droplet with Terraform
+      #   if: github.ref == 'refs/heads/main'
+      #   working-directory: ${{ env.working_directory }}
+      #   run: terraform destroy -auto-approve -target=digitalocean_droplet.droplet_bbs_game_server
