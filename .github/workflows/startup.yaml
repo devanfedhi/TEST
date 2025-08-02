@@ -24,12 +24,16 @@ jobs:
 
       - name: Install doctl
         run: |
+          set -e
+
           sudo snap install doctl
           doctl auth init -t $DIGITALOCEAN_ACCESS_TOKEN
 
       - name: Check if droplet is already running
         id: check_droplet
         run: |
+          set -e
+
           DROPLET_ID=$(doctl compute droplet list --format ID,Name,Status --no-header | grep "${{ env.droplet_name }}" | awk '{print $1}')
 
           if [ -n "$DROPLET_ID" ]; then
@@ -74,7 +78,7 @@ jobs:
         run: terraform plan -out=startup.tfplan
 
       - name: Terraform Apply
-        if: steps.check_droplet.outputs.already_running != 'true' && github.ref == 'refs/heads/main'
+        # if: steps.check_droplet.outputs.already_running != 'true' && github.ref == 'refs/heads/main'
         working-directory: ${{ env.working_directory }}
         run: |
           set -e
