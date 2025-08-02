@@ -6,6 +6,7 @@ on:
 env:
   working_directory: ./terraform
   snapshot_name: bbs-snapshot-latest
+  droplet_name: droplet-bbs-game-server
 
 jobs:
   startup:
@@ -20,7 +21,19 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=${{ secrets.DIGITAL_OCEAN_SPACES_ACCESS_KEY_ID }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DIGITAL_OCEAN_SPACES_SECRET_KEY }}" >> $GITHUB_ENV
 
+      - name: Check if droplet is already running
+        id: check_droplet
+        run: |
+          DROPLET_ID=$(doctl compute droplet list --format ID,Name,Status --no-header | grep "${{ env.droplet_name }}" | awk '{print $1}')
+          if [ -n "$DROPLET_ID" ]; then
+            STATUS=$(doctl compute droplet get "$DROPLET_ID" --format Status --no-header)
+            if [ "$STATUS" = "active" ]; then
+              echo "already_running=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
       - name: Update Terraform image variable to latest snapshot
+        if: steps.check_droplet.outputs.already_running != 'true'
         working-directory: ${{ env.working_directory }}
         run: |
           # Get the latest snapshot ID with the name "bbs-snapshot-latest"
@@ -36,17 +49,20 @@ jobs:
           fi
 
       - name: Setup Terraform
+        if: steps.check_droplet.outputs.already_running != 'true'
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
+        if: steps.check_droplet.outputs.already_running != 'true'
         working-directory: ${{ env.working_directory }}
         run: terraform init
 
       - name: Terraform Plan
+        if: steps.check_droplet.outputs.already_running != 'true'
         run: terraform plan -out=setup.tfplan
         working-directory: ${{ env.working_directory }}
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
+        if: steps.check_droplet.outputs.already_running != 'true' && github.ref == 'refs/heads/main'
         working-directory: ${{ env.working_directory }}
         run: terraform apply -auto-approve startup.tfplan 2>&1 | sed -E 's/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/***.***.***.***/g'
