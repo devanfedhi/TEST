@@ -31,6 +31,7 @@ jobs:
         id: check_droplet
         run: |
           DROPLET_ID=$(doctl compute droplet list --format ID,Name,Status --no-header | grep "${{ env.droplet_name }}" | awk '{print $1}')
+
           if [ -n "$DROPLET_ID" ]; then
             STATUS=$(doctl compute droplet get "$DROPLET_ID" --format Status --no-header)
             if [ "$STATUS" = "active" ]; then
@@ -48,8 +49,10 @@ jobs:
             | sort -rk3 \
             | head -n1 \
             | awk '{print $1}')
+
           if [ -n "$SNAPSHOT_ID" ]; then
             echo "TF_VAR_droplet_image=$SNAPSHOT_ID" >> $GITHUB_ENV
+            echo "Snapshot has been found with ID $SNAPSHOT_ID"
           else
             echo "No snapshot found with name '${{ env.snapshot_name }}'. Not setting TF_VAR_droplet_image."
           fi
@@ -68,7 +71,7 @@ jobs:
         run: terraform plan -out=startup.tfplan
         working-directory: ${{ env.working_directory }}
 
-      # - name: Terraform Apply
-      #   if: steps.check_droplet.outputs.already_running != 'true' && github.ref == 'refs/heads/main'
-      #   working-directory: ${{ env.working_directory }}
-      #   run: terraform apply -auto-approve startup.tfplan 2>&1 | sed -E 's/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/***.***.***.***/g'
+      - name: Terraform Apply
+        if: steps.check_droplet.outputs.already_running != 'true' && github.ref == 'refs/heads/main'
+        working-directory: ${{ env.working_directory }}
+        run: terraform apply -auto-approve startup.tfplan 2>&1 | sed -E 's/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/***.***.***.***/g'
