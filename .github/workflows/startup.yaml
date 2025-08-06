@@ -24,8 +24,6 @@ jobs:
 
       - name: Install doctl
         run: |
-          set -e
-
           sudo snap install doctl
           doctl auth init -t $DIGITALOCEAN_ACCESS_TOKEN
 
