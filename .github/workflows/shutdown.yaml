@@ -24,7 +24,7 @@ jobs:
 
       - name: Install doctl
         run: |
-          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.135.0/doctl-1.135.0-source.tar.gz | tar -xz
+          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.135.0/doctl-1.135.0-linux-amd64.tar.gz | tar -xz
           sudo mv doctl /usr/local/bin
           doctl version
           doctl auth init -t $DIGITALOCEAN_ACCESS_TOKEN
